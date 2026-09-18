@@ -18,7 +18,7 @@ public class Member {
     private String email;
 
     @NotBlank @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     @NotBlank @Column(nullable = false, unique = true)
     private String nickname;
