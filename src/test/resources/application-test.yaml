@@ -1,0 +1,14 @@
+spring:
+  config:
+    # 로컬 비밀번호 파일을 함께 읽는다.
+    import: classpath:application-test-local.yaml
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/backend_service_test?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: backend_app
+
+  jpa:
+    hibernate:
+      # 테스트 시작 시 테이블 생성, 종료 시 삭제
+      ddl-auto: create-drop
