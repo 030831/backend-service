@@ -1,6 +1,8 @@
 package com.hyunjun.backend.account.service;
 
 import com.hyunjun.backend.account.domain.Account;
+import com.hyunjun.backend.account.dto.AccountResponse;
+import com.hyunjun.backend.account.exception.AccountNotFoundException;
 import com.hyunjun.backend.account.exception.DuplicateAccountException;
 import com.hyunjun.backend.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,14 @@ public class AccountService {
         }
 
         return account.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public AccountResponse getAccount(Long accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("계정을 찾을 수 없습니다."));
+
+        return AccountResponse.from(account);
     }
 
     private DuplicateAccountException translate(DataIntegrityViolationException exception) {
