@@ -11,4 +11,4 @@ spring:
   jpa:
     hibernate:
       # 테스트 시작 시 테이블 생성, 종료 시 삭제
-      ddl-auto: create-drop
+      ddl-auto: validate
