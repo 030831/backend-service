@@ -12,6 +12,10 @@ public record LoginPrincipal(LoginType type, Long id) implements Serializable {
         return new LoginPrincipal(LoginType.ACCOUNT, accountId);
     }
 
+    public static LoginPrincipal admin(Long adminId) {
+        return new LoginPrincipal(LoginType.ADMIN, adminId);
+    }
+
     public List<GrantedAuthority> authorities() {
         return List.of(new SimpleGrantedAuthority(type.name()));
     }

@@ -39,7 +39,8 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/error").permitAll()
-                .requestMatchers(HttpMethod.POST, "/accounts", "/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/accounts", "/auth/login", "/admin/auth/login").permitAll()
+                .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .anyRequest().hasAuthority("ACCOUNT"));
 
         http.formLogin(form -> form.disable());
