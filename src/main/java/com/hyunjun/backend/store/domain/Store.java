@@ -27,7 +27,7 @@ public class Store extends BaseTimeEntity {
         }
 
         if (name == null || name.isBlank() || name.length() > 50) {
-            throw new IllegalArgumentException("이름이 비어있거나 .");
+            throw new IllegalArgumentException("이름이 비어있거나 50자를 초과하였습니다.");
         }
 
         this.accountId = accountId;
