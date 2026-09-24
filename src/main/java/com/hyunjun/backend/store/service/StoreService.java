@@ -21,4 +21,11 @@ public class StoreService {
 
         return StoreResponse.from(store);
     }
+
+    @Transactional(readOnly = true)
+    public Long getMyStoreId(Long accountId) {
+        return storeRepository.findByAccountId(accountId)
+                .map(Store::getId)
+                .orElseThrow(() -> new StoreNotFoundException("스토어가 없습니다."));
+    }
 }
