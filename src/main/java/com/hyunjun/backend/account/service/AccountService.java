@@ -5,12 +5,15 @@ import com.hyunjun.backend.account.dto.AccountResponse;
 import com.hyunjun.backend.account.exception.AccountNotFoundException;
 import com.hyunjun.backend.account.exception.DuplicateAccountException;
 import com.hyunjun.backend.account.repository.AccountRepository;
+import com.hyunjun.backend.common.util.EmailNormalizer;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +24,10 @@ public class AccountService {
 
     @Transactional
     public Long register(String email, String nickname, String rawPassword) {
-        if (accountRepository.existsByEmail(email)) {
+
+        String normalizedEmail = EmailNormalizer.normalize(email);
+
+        if (accountRepository.existsByEmail(normalizedEmail)) {
             throw new DuplicateAccountException("이미 사용 중인 이메일입니다.");
         }
 
@@ -29,7 +35,7 @@ public class AccountService {
             throw new DuplicateAccountException("이미 사용 중인 닉네임입니다.");
         }
 
-        Account account = new Account(email, nickname, passwordEncoder.encode(rawPassword));
+        Account account = new Account(normalizedEmail, nickname, passwordEncoder.encode(rawPassword));
 
         try {
             accountRepository.saveAndFlush(account);
@@ -46,6 +52,19 @@ public class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException("계정을 찾을 수 없습니다."));
 
         return AccountResponse.from(account);
+    }
+
+    @Transactional
+    public void recordLoginFailure(Long accountId, Instant now) {
+        accountRepository.findByIdForUpdate(accountId)
+                .ifPresent(account -> account.recordLoginFailure(now));
+    }
+
+    @Transactional
+    public void recordLoginSuccess(Long accountId) {
+        accountRepository.findById(accountId)
+                .filter(Account::hasLoginFailures)
+                .ifPresent(Account::resetLoginFailures);
     }
 
     private DuplicateAccountException translate(DataIntegrityViolationException exception) {

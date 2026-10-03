@@ -1,10 +1,13 @@
 package com.hyunjun.backend.admin.domain;
 
 import com.hyunjun.backend.common.domain.BaseTimeEntity;
+import com.hyunjun.backend.common.domain.LoginLock;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "admin_accounts",
@@ -31,6 +34,9 @@ public class AdminAccount extends BaseTimeEntity {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Embedded
+    private LoginLock loginLock = new LoginLock();
+
     public AdminAccount(String email, String name, String passwordHash) {
 
         this.email = requiredText(email, EMAIL_MAX_LENGTH, "이메일");
@@ -41,6 +47,22 @@ public class AdminAccount extends BaseTimeEntity {
         }
 
         this.passwordHash = passwordHash;
+    }
+
+    public boolean isLoginLocked(Instant now) {
+        return loginLock.isLocked(now);
+    }
+
+    public void recordLoginFailure(Instant now) {
+        loginLock.recordFailure(now);
+    }
+
+    public boolean hasLoginFailures() {
+        return loginLock.hasFailures();
+    }
+
+    public void resetLoginFailures() {
+        loginLock.reset();
     }
 
     private static String requiredText(String value, int maxLength, String name) {

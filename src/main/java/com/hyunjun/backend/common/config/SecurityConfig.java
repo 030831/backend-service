@@ -1,12 +1,13 @@
 package com.hyunjun.backend.common.config;
 
+import com.hyunjun.backend.common.security.ProblemDetailAccessDeniedHandler;
+import com.hyunjun.backend.common.security.ProblemDetailAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -30,7 +31,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             CsrfTokenRepository csrfTokenRepository,
-            SecurityContextRepository securityContextRepository
+            SecurityContextRepository securityContextRepository,
+            ProblemDetailAuthenticationEntryPoint entryPoint,
+            ProblemDetailAccessDeniedHandler accessDeniedHandler
     ) throws Exception {
         http.csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokenRepository));
         http.securityContext(context ->
@@ -49,7 +52,8 @@ public class SecurityConfig {
         http.httpBasic(basic -> basic.disable());
 
         http.exceptionHandling(exception -> exception
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+                .authenticationEntryPoint(entryPoint)
+                .accessDeniedHandler(accessDeniedHandler));
 
         http.logout(logout -> logout
                 .logoutUrl("/auth/logout")
