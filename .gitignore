@@ -40,3 +40,6 @@ application-local.yaml
 
 # 테스트 DB 비밀번호 파일 제외
 /src/test/resources/application-test-local.yaml
+
+# 서버 환경 변수 파일(비밀값). deploy/.env.example만 Git에 둔다.
+deploy/.env

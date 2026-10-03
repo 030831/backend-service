@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+# GITHUB_TOKEN에 줄 권한. 지금은 코드 읽기만. 이미지 올리기 권한은 조각 ③에서 더한다.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 테스트 (MySQL 8.4 서비스 컨테이너)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-ci
+          MYSQL_DATABASE: backend_service_test   # IntegrationTestSupport가 확인하는 DB 이름
+          MYSQL_USER: backend_app                # application-test.yaml의 username
+          MYSQL_PASSWORD: ci-password
+        ports:
+          - 3306:3306                            # 러너의 localhost:3306 → 컨테이너 3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6     # Gradle과 의존성을 캐시한다
+      - name: 테스트 실행
+        run: bash ./gradlew --no-daemon test
+        env:
+          SPRING_DATASOURCE_PASSWORD: ci-password  # 비밀번호 파일 대신 환경 변수로
