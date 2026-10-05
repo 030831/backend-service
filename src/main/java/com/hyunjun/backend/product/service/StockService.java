@@ -44,4 +44,17 @@ public class StockService {
                 .orElseThrow(() -> new SkuNotFoundException("재고 행을 찾을 수 없습니다."))
                 .getQuantity();
     }
+
+    @Transactional
+    public boolean deduct(Long skuId, int quantity) {
+        requirePositive(quantity);
+
+        return stockRepository.adjustQuantity(skuId, -quantity) == 1;
+    }
+
+    private static void requirePositive(int quantity) {
+        if (quantity < 1) {
+            throw new IllegalArgumentException("수량은 1 이상이어야 합니다.");
+        }
+    }
 }

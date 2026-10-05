@@ -71,6 +71,11 @@ public abstract class IntegrationTestSupport {
 
     // 다른 테이블을 FK로 가리키는 쪽부터 지운다.
     private void deleteAllRows() {
+        jdbcTemplate.update("DELETE FROM order_lines");
+        jdbcTemplate.update("DELETE FROM orders");
+        jdbcTemplate.update("DELETE FROM stocks");
+        jdbcTemplate.update("DELETE FROM skus");
+        jdbcTemplate.update("DELETE FROM products");
         jdbcTemplate.update("DELETE FROM stores");
         jdbcTemplate.update("DELETE FROM store_applications");
         jdbcTemplate.update("DELETE FROM accounts");
