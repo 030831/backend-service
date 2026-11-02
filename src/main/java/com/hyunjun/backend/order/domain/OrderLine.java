@@ -1,5 +1,6 @@
 package com.hyunjun.backend.order.domain;
 
+import com.hyunjun.backend.order.exception.InvalidOrderStateException;
 import com.hyunjun.backend.product.domain.Product;
 import com.hyunjun.backend.product.domain.Sku;
 import jakarta.persistence.*;
@@ -77,5 +78,16 @@ public class OrderLine {
 
     public boolean isOrdered() {
         return status == OrderLineStatus.ORDERED;
+    }
+
+    StockRelease cancel(Instant now) {
+        if (status != OrderLineStatus.ORDERED) {
+            throw new InvalidOrderStateException("이미 취소된 항목입니다.");
+        }
+
+        this.status = OrderLineStatus.CANCELED;
+        this.canceledAt = now;
+
+        return new StockRelease(skuId, quantity);
     }
 }

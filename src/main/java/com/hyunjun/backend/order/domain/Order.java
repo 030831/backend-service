@@ -1,6 +1,9 @@
 package com.hyunjun.backend.order.domain;
 
 import com.hyunjun.backend.common.domain.BaseTimeEntity;
+import com.hyunjun.backend.order.exception.InvalidOrderStateException;
+import com.hyunjun.backend.order.exception.OrderLineNotFoundException;
+import com.hyunjun.backend.order.exception.PaymentAmountMismatchException;
 import com.hyunjun.backend.product.domain.Sku;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -101,5 +104,108 @@ public class Order extends BaseTimeEntity {
         this.payAmount = this.totalAmount;
 
         return line;
+    }
+
+    public void confirmPayment(long amount, Instant now) {
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOrderStateException(stateMessage());
+        }
+
+        if (now.isAfter(expiresAt)) {
+            throw new InvalidOrderStateException("결제 기한이 지났습니다.");
+        }
+
+        if (amount != payAmount) {
+            throw new PaymentAmountMismatchException("결제 금액이 다릅니다.");
+        }
+
+        this.status = OrderStatus.PAID;
+        this.paidAt = now;
+    }
+
+    public List<StockRelease> cancel(List<Long> lineIds, Instant now) {
+        requireCancelable();
+
+        List<OrderLine> targets = linesToCancel(lineIds);
+        List<StockRelease> releases = cancelLines(targets, now);
+
+        applyCancelAmount(targets);
+        closeIfAllCanceled(now);
+
+        return releases;
+    }
+
+    public List<StockRelease> expire(Instant now) {
+        if (status != OrderStatus.PENDING_PAYMENT || now.isBefore(expiresAt)) {
+            return List.of();
+        }
+
+        List<StockRelease> releases = cancelLines(orderedLines(), now);
+
+        this.status = OrderStatus.EXPIRED;
+
+        return releases;
+    }
+
+    private void requireCancelable() {
+        if (status != OrderStatus.PENDING_PAYMENT && status != OrderStatus.PAID) {
+            throw new InvalidOrderStateException(stateMessage());
+        }
+    }
+
+    private List<OrderLine> linesToCancel(List<Long> lineIds) {
+        return (lineIds == null || lineIds.isEmpty())
+                ? orderedLines()
+                : findLines(lineIds);
+    }
+
+    private List<StockRelease> cancelLines(List<OrderLine> targets, Instant now) {
+        return targets.stream()
+                .map(line -> line.cancel(now))
+                .toList();
+    }
+
+    private void applyCancelAmount(List<OrderLine> targets) {
+        if (status == OrderStatus.PENDING_PAYMENT) {
+            this.payAmount = orderedLines().stream().mapToLong(OrderLine::lineAmount).sum();
+        } else {
+            this.refundedAmount += targets.stream()
+                    .mapToLong(OrderLine::lineAmount)
+                    .sum();
+        }
+    }
+
+    private void closeIfAllCanceled(Instant now) {
+        if (orderedLines().isEmpty()) {
+            this.status = OrderStatus.CANCELED;
+            this.canceledAt = now;
+        }
+    }
+
+    private List<OrderLine> orderedLines() {
+        return lines.stream().filter(OrderLine::isOrdered).toList();
+    }
+
+    private List<OrderLine> findLines(List<Long> lineIds) {
+        List<OrderLine> found = new ArrayList<>();
+
+        for (Long lineId : lineIds) {
+            OrderLine line = lines.stream()
+                    .filter(candidate -> lineId.equals(candidate.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new OrderLineNotFoundException("주문 항목을 찾을 수 없습니다."));
+            found.add(line);
+        }
+
+        return found;
+    }
+
+    private String stateMessage() {
+        return switch (status) {
+            case PAID -> "이미 결제된 주문입니다.";
+            case CANCELED -> "취소된 주문입니다.";
+            case EXPIRED -> "만료된 주문입니다.";
+            case PENDING_PAYMENT -> "결제 대기 중인 주문입니다.";
+        };
     }
 }
