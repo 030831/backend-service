@@ -18,6 +18,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"        # 서버 자신에서만 접속. 인터넷에는 열리지 않는다
     mem_limit: 1g
+    # TODO: 로그 보존 기간을 정하고, 용량 제한으로 삭제되기 전에 별도 저장소에 보관하는 방식을 검토한다.
     logging:
       driver: json-file
       options:

@@ -44,6 +44,7 @@ class OrderIntegrationTest extends IntegrationTestSupport {
         return body(response).get("skus").get(0).get("id").asLong();
     }
 
+    // TODO: Map<?,?> 와일드 카드 필요성 검토. 기존값 : Map<String, Object>
     /**
      * 주문 요청 본문, 항목은 line(skuId, 수량) 으로 만든다.
      */
