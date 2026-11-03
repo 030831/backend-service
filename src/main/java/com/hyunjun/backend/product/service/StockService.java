@@ -53,6 +53,15 @@ public class StockService {
         return stockRepository.adjustQuantity(skuId, -quantity) == 1;
     }
 
+    @Transactional
+    public void restore(Long skuId, int quantity) {
+        requirePositive(quantity);
+
+        if (stockRepository.adjustQuantity(skuId, quantity) == 0) {
+            throw new IllegalStateException("재고 행이 없습니다. skudId = " + skuId);
+        }
+    }
+
     private static void requirePositive(int quantity) {
         if (quantity < 1) {
             throw new IllegalArgumentException("수량은 1 이상이어야 합니다.");
