@@ -1,11 +1,9 @@
 package com.hyunjun.backend.cart.controller;
 
-import com.hyunjun.backend.cart.dto.CartAddRequest;
-import com.hyunjun.backend.cart.dto.CartItemResponse;
-import com.hyunjun.backend.cart.dto.CartLineResponse;
-import com.hyunjun.backend.cart.dto.CartQuantityRequest;
+import com.hyunjun.backend.cart.dto.*;
 import com.hyunjun.backend.cart.service.CartService;
 import com.hyunjun.backend.common.security.LoginPrincipal;
+import com.hyunjun.backend.order.dto.OrderResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -42,6 +40,12 @@ public class CartController {
     @ResponseStatus(HttpStatus.NO_CONTENT) // 204
     public void remove(@PathVariable Long cartItemId, @AuthenticationPrincipal LoginPrincipal principal) {
         cartService.remove(principal.id(), cartItemId);
+    }
+
+    @PostMapping("/order")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OrderResponse order(@Valid @RequestBody CartOrderRequest request, @AuthenticationPrincipal LoginPrincipal principal) {
+        return cartService.order(principal.id(), request, Instant.now());
     }
 }
 

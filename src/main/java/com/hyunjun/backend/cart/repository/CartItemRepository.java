@@ -6,8 +6,10 @@ import com.hyunjun.backend.cart.dto.CartLineRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +40,11 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
         order by c.id desc
     """)
     List<CartLineRow> findLines(Long accountId);
+
+    List<CartItem> findAllByAccountIdAndIdIn(Long accountId, Collection<Long> ids);
+
+    @Transactional
+    @Modifying
+    @Query("delete from CartItem c where c.accountId = :accountId and c.id in :ids")
+    int deleteOrdered(Long accountId, Collection<Long> ids);
 }
