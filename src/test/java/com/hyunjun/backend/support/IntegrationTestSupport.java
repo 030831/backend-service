@@ -13,7 +13,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,6 +74,7 @@ public abstract class IntegrationTestSupport {
 
     // 다른 테이블을 FK로 가리키는 쪽부터 지운다.
     private void deleteAllRows() {
+        jdbcTemplate.update("DELETE FROM cart_items");
         jdbcTemplate.update("DELETE FROM order_lines");
         jdbcTemplate.update("DELETE FROM orders");
         jdbcTemplate.update("DELETE FROM stocks");
@@ -117,5 +121,29 @@ public abstract class IntegrationTestSupport {
 
     protected JsonNode body(HttpResponse<String> response) {
         return jsonMapper.readTree(response.body());
+    }
+
+    /**
+     * 두 작업을 동시에 실행하고 결과(성공 값 또는 예외)를 순서대로 모은다. 20초 안에 안 끝나면 실패(교착 감지).
+     */
+    protected List<Object> runTogether(Callable<?> first, Callable<?> second) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        try {
+            List<Future<?>> futures = List.of(executor.submit(first), executor.submit(second));
+            List<Object> results = new ArrayList<>();
+
+            for (Future<?> future : futures) {
+                try {
+                    results.add(future.get(20, TimeUnit.SECONDS));
+                } catch (ExecutionException exception) {
+                    results.add(exception.getCause());
+                }
+            }
+
+            return results;
+        } finally {
+            executor.shutdownNow();
+        }
     }
 }

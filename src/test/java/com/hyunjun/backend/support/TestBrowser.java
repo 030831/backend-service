@@ -64,6 +64,30 @@ public class TestBrowser {
                 .build());
     }
 
+    public HttpResponse<String> patch(String path, String json) {
+        if (csrfToken() == null) {
+            get("/auth/me");
+        }
+
+        return send(request(path)
+                .header("Content-Type", "application/json")
+                .header(CSRF_HEADER, csrfToken())
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(json))
+                .build());
+    }
+
+    public HttpResponse<String> delete(String path) {
+        if (csrfToken() == null) {
+            get("/auth/me");
+        }
+
+        return send(request(path)
+                .header(CSRF_HEADER, csrfToken())
+                .DELETE()
+                .build());
+    }
+
+
     /** 쿠키 저장소에 있는 XSRF-TOKEN 값. 없으면 null. */
     public String csrfToken() {
         return cookieManager.getCookieStore().getCookies().stream()

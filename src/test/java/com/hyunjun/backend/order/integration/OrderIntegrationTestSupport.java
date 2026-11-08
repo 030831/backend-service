@@ -9,7 +9,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-abstract class OrderIntegrationTestSupport extends IntegrationTestSupport {
+public abstract class OrderIntegrationTestSupport extends IntegrationTestSupport {
 
     /**
      * 가입, 로그인한 판매자가 스토어를 신청하고 관리자가 승인한다. 판매자 브라우저를 돌려준다.

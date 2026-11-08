@@ -11,9 +11,7 @@ import com.hyunjun.backend.support.IntegrationTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
 
 abstract class OrderConcurrencyTestSupport extends IntegrationTestSupport {
 
@@ -82,30 +80,6 @@ abstract class OrderConcurrencyTestSupport extends IntegrationTestSupport {
         return jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM orders", Integer.class
         );
-    }
-
-    /**
-     * 두 작업을 동시에 실행하고 결과(성공 값 또는 예외)를 순서대로 모은다. 20초 안에 안 끝나면 실패(교착 감지).
-     */
-    protected List<Object> runTogether(Callable<?> first, Callable<?> second) throws Exception {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        try {
-            List<Future<?>> futures = List.of(executor.submit(first), executor.submit(second));
-            List<Object> results = new ArrayList<>();
-
-            for (Future<?> future : futures) {
-                try {
-                    results.add(future.get(20, TimeUnit.SECONDS));
-                } catch (ExecutionException exception) {
-                    results.add(exception.getCause());
-                }
-            }
-
-            return results;
-        } finally {
-            executor.shutdownNow();
-        }
     }
 
 }
