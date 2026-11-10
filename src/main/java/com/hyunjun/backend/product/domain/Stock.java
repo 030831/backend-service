@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Stock {
 
+    public static final int MAX_QUANTITY = 1_000_000;
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

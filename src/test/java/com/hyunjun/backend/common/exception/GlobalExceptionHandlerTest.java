@@ -10,17 +10,17 @@ import static org.assertj.core.api.Assertions.*;
 class GlobalExceptionHandlerTest {
 
     @Test
-    void 엔티티_검사_예외는_400_ProblemDetail로_바뀐다() {
+    void 처리하지_못한_예외는_500_ProblemDetail로_바뀌고_내부_메시지는_숨긴다() {
         // given
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
-        IllegalArgumentException exception = new IllegalArgumentException("이메일은(는) 비어 있지 않은 254자 이하여야 합니다.");
+        IllegalStateException exception = new IllegalStateException("내부 오류");
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/accounts");
 
         // when
-        ProblemDetail problemDetail = handler.handleIllegalArgument(exception, request);
+        ProblemDetail problemDetail = handler.handleUnexpected(exception, request);
 
         // then
-        assertThat(problemDetail.getStatus()).isEqualTo(400);
-        assertThat(problemDetail.getDetail()).isEqualTo("요청 값이 올바르지 않습니다.");
+        assertThat(problemDetail.getStatus()).isEqualTo(500);
+        assertThat(problemDetail.getDetail()).isEqualTo("서버 오류가 발생했습니다.");
     }
 }

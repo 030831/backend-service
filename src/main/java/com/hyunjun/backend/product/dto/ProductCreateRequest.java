@@ -2,10 +2,7 @@ package com.hyunjun.backend.product.dto;
 
 import com.hyunjun.backend.product.domain.Product;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.util.HashSet;
 import java.util.List;
@@ -21,7 +18,8 @@ public record ProductCreateRequest(
         String description,
 
         @NotEmpty(message = "판매 단위는 1개 이상이어야 합니다.")
-        List<@Valid SkuCreateRequest> skus
+        @Size(max = Product.MAX_SKUS)
+        List<@Valid @NotNull SkuCreateRequest> skus
 ) {
 
     @AssertTrue(message = "옵션 라벨이 중복됩니다.")
@@ -33,7 +31,7 @@ public record ProductCreateRequest(
         Set<String> labels = new HashSet<>();
 
         for (SkuCreateRequest sku : skus) {
-            if (sku.optionLabel() != null && !labels.add(sku.optionLabel())) {
+            if (sku != null && sku.optionLabel() != null && !labels.add(sku.optionLabel())) {
                 return false;
             }
         }

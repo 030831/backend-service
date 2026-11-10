@@ -38,13 +38,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "이메일 또는 비밀번호가 올바르지 않습니다.");
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgument(IllegalArgumentException exception,
-                                               HttpServletRequest request) {
-        log.warn("DTO 검사를 통과한 값이 엔티티 검사에 걸렸습니다. {} {}: {}",
-                request.getMethod(), request.getRequestURI(), exception.getMessage());
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleUnexpected(Exception exception, HttpServletRequest request) {
+        log.error("서버 오류가 발생했습니다. {} {} ",
+                request.getMethod(), request.getRequestURI(), exception);
 
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다.");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
     }
 
     @Override

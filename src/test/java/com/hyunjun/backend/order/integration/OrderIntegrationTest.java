@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class OrderIntegrationTest extends OrderIntegrationTestSupport {
 
-
     @Test
     void 주문하면_201과_PENDING_PAYMENT를_받고_재고가_줄어든다() {
         // given
@@ -112,6 +111,54 @@ class OrderIntegrationTest extends OrderIntegrationTestSupport {
         HttpResponse<String> response = buyer.get("/orders/me");
         assertThat(body(response)).hasSize(1);
         assertThat(body(response).get(0).get("id").asLong()).isEqualTo(id);
+    }
 
+    @Test
+    void 같은_멱등키로_다른_상품을_보내면_409이고_주문과_재고는_그대로다() {
+        // given
+        TestBrowser seller = openStore("seller@example.com", "철수상점");
+        Long skuIdA = registerSku(seller, "면 티셔츠", 10000, 5);
+        Long skuIdB = registerSku(seller, "양말", 10000, 5);
+        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+
+        HttpResponse<String> firstResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuIdA, 1)));
+        assertThat(firstResponse.statusCode()).isEqualTo(201);
+
+        // when
+        HttpResponse<String> secondResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuIdB, 1)));
+
+        // then
+        assertThat(secondResponse.statusCode()).isEqualTo(409);
+        assertThat(body(secondResponse).get("detail").asString()).isEqualTo("같은 멱등키로 다른 내용의 주문을 보냈습니다.");
+        assertThat(orderCount()).isEqualTo(1);
+        assertThat(stock(skuIdA)).isEqualTo(4);
+        assertThat(stock(skuIdB)).isEqualTo(5);
+    }
+
+    @Test
+    void 같은_멱등키로_다른_배송지를_보내면_409이다() {
+        // given
+        TestBrowser seller = openStore("seller@example.com", "철수상점");
+        Long skuId = registerSku(seller, "면 티셔츠", 10000, 5);
+        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+        HttpResponse<String> firstResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuId, 1)));
+
+        assertThat(firstResponse.statusCode()).isEqualTo(201);
+        // when
+        HttpResponse<String> secondResponse = buyer.post("/orders", json(Map.of(
+                "idempotencyKey", "key-1",
+                "lines", List.of(line(skuId, 1)),
+                "delivery", Map.of(
+                        "recipientName", "민수",
+                        "recipientPhone", "010-1234-5678",
+                        "zipCode", "04524",
+                        "address1", "서울 중구 세종대로 110"
+                ),
+                "expectedTotal", 10000
+        )));
+
+        // then
+        assertThat(secondResponse.statusCode()).isEqualTo(409);
+        assertThat(orderCount()).isEqualTo(1);
     }
 }

@@ -23,6 +23,7 @@ public class Order extends BaseTimeEntity {
 
     public static final Duration PAYMENT_TIMEOUT = Duration.ofMinutes(30);
     public static final int IDEMPOTENCY_KEY_MAX_LENGTH = 64;
+    public static final int MAX_LINES = 100;
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -272,6 +272,31 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(2);
     }
 
+    @Test
+    void 같은_멱등키로_다른_상품을_고르면_409이고_그_항목은_장바구니에_남는다() {
+        // given
+        Long skuIdC = registerSku(seller, "가방", 10000, 5);
+
+        long cartItemIdA = putInCart(buyer, skuIdA, 1);
+
+        String key = UUID.randomUUID().toString();
+
+        HttpResponse<String> firstResponse = orderFromCart(buyer, key, 10000, cartItemIdA);
+        assertThat(firstResponse.statusCode()).isEqualTo(201);
+
+        long cartItemIdB = putInCart(buyer, skuIdC, 1);
+
+        // when
+        HttpResponse<String> secondResponse = orderFromCart(buyer, key, 10000, cartItemIdB);
+
+        // then
+        assertThat(secondResponse.statusCode()).isEqualTo(409);
+        assertThat(body(secondResponse).get("detail").asString()).isEqualTo("같은 멱등키로 다른 내용의 주문을 보냈습니다.");
+        assertThat(orderCount()).isEqualTo(1);
+        assertThat(stock(skuIdC)).isEqualTo(5);
+        assertThat(cartLineOf(myCart(buyer), skuIdC).get("quantity").asLong()).isEqualTo(1);
+    }
+
     private HttpResponse<String> addToCart(TestBrowser browser, Long skuId, int quantity) {
         return browser.post("/cart/items", json(Map.of(
                 "skuId", skuId, "quantity", quantity

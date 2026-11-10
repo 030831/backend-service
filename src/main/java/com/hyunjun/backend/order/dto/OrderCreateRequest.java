@@ -14,7 +14,8 @@ public record OrderCreateRequest(
         String idempotencyKey,
 
         @NotEmpty(message = "주문 항목은 1개 이상이어야 합니다.")
-        List<@Valid OrderLineRequest> lines,
+        @Size(max = Order.MAX_LINES)
+        List<@Valid @NotNull OrderLineRequest> lines,
 
         @NotNull(message = "배송지는 필수입니다.")
         @Valid
@@ -34,7 +35,7 @@ public record OrderCreateRequest(
         Set<Long> skuIds = new HashSet<>();
 
         for (OrderLineRequest line : lines) {
-            if (line.skuId() != null && !skuIds.add(line.skuId())) {
+            if (line != null && line.skuId() != null && !skuIds.add(line.skuId())) {
                 return false;
             }
         }

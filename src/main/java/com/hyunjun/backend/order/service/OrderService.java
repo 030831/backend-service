@@ -15,6 +15,7 @@ public class OrderService {
 
     private final OrderCreator orderCreator;
     private final OrderQueryService orderQueryService;
+    private final IdempotencyChecker idempotencyChecker;
 
     /**
      * 트랜잭션을 열지 않는다. 멱등키 조회와 생성 트랜잭션을 순서대로 부르기만 한다.
@@ -23,15 +24,20 @@ public class OrderService {
         Optional<OrderResponse> existing = orderQueryService.findByIdempotencyKey(accountId, request.idempotencyKey());
 
         if (existing.isPresent()) {
+            idempotencyChecker.requireSameOrder(existing.get(), request);
             return existing.get();
         }
 
         try {
             return orderCreator.create(accountId, request, now);
         } catch (DuplicateOrderRequestException exception) {
-            // 생성 트랜잭션은 롤백됐다. 그 트랜잭션이 끝난 지금, 먼저 저장된 주문을 다시 읽는다.
-            return orderQueryService.findByIdempotencyKey(accountId, request.idempotencyKey())
+
+            OrderResponse orderResponse = orderQueryService.findByIdempotencyKey(accountId, request.idempotencyKey())
                     .orElseThrow(() -> exception);
+
+            idempotencyChecker.requireSameOrder(orderResponse, request);
+
+            return orderResponse;
         }
     }
 }

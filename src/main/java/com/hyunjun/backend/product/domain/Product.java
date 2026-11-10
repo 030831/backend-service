@@ -18,6 +18,7 @@ public class Product extends BaseTimeEntity {
 
     public static final int NAME_MAX_LENGTH = 100;
     public static final int DESCRIPTION_MAX_LENGTH = 2000;
+    public static final int MAX_SKUS = 100;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

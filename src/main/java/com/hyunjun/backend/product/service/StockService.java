@@ -36,14 +36,14 @@ public class StockService {
     public int adjust(Long skuId, int delta) {
         int updatedRows = stockRepository.adjustQuantity(skuId, delta);
 
-        // TODO: 재고 행이 없는 경우에도 0이 반환되므로, 재고 부족과 데이터 누락을 구분해야 한다.
+        Stock stock = stockRepository.findBySkuId(skuId)
+                .orElseThrow(() -> new SkuNotFoundException("재고 행을 찾을 수 없습니다."));
+
         if (updatedRows == 0) {
             throw new InsufficientStockException("재고가 부족합니다.");
         }
 
-        return stockRepository.findBySkuId(skuId)
-                .orElseThrow(() -> new SkuNotFoundException("재고 행을 찾을 수 없습니다."))
-                .getQuantity();
+        return stock.getQuantity();
     }
 
     @Transactional

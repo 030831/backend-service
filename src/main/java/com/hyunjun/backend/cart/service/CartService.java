@@ -11,6 +11,7 @@ import com.hyunjun.backend.cart.repository.CartItemRepository;
 import com.hyunjun.backend.order.dto.OrderCreateRequest;
 import com.hyunjun.backend.order.dto.OrderLineRequest;
 import com.hyunjun.backend.order.dto.OrderResponse;
+import com.hyunjun.backend.order.service.IdempotencyChecker;
 import com.hyunjun.backend.order.service.OrderQueryService;
 import com.hyunjun.backend.order.service.OrderService;
 import com.hyunjun.backend.product.service.ProductQueryService;
@@ -31,6 +32,7 @@ public class CartService {
     private final ProductQueryService productQueryService;
     private final OrderService orderService;
     private final OrderQueryService orderQueryService;
+    private final IdempotencyChecker idempotencyChecker;
 
     @Transactional
     public CartItemResponse add(Long accountId, Long skuId, int quantity, Instant now) {
@@ -84,10 +86,19 @@ public class CartService {
      * 트랜잭션을 열지 않는다. 주문 생성(OrderService.place)이 자기 트랜잭션을 커밋한 뒤에 장바구니를 지운다.
      */
     public OrderResponse order(Long accountId, CartOrderRequest request, Instant now) {
-        // a. 같은 멱등키의 주문이 이미 있으면 장바구니를 읽지 않는다. 남은 고른 항목만 지우고 그 주문을 돌려준다.
+        // a. 같은 멱등키의 주문이 이미 있으면 내용이 같은지 확인하고, 남은 고른 항목만 지우고 그 주문을 돌려준다.
         Optional<OrderResponse> existing = orderQueryService.findByIdempotencyKey(accountId, request.idempotencyKey());
 
         if (existing.isPresent()) {
+            idempotencyChecker.requireSameDeliveryAndTotal(existing.get(),
+                    request.delivery(), request.expectedTotal());
+
+            List<Long> remainingSkuIds = cartItemRepository.
+                    findAllByAccountIdAndIdIn(accountId, request.cartItemIds()).stream().map(CartItem::getSkuId).toList();
+
+
+            idempotencyChecker.requireOrderedSkus(existing.get(), remainingSkuIds);
+
             cartItemRepository.deleteOrdered(accountId, request.cartItemIds());
             return existing.get();
         }

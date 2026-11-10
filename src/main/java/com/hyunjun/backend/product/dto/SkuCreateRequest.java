@@ -1,10 +1,8 @@
 package com.hyunjun.backend.product.dto;
 
 import com.hyunjun.backend.product.domain.Sku;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import com.hyunjun.backend.product.domain.Stock;
+import jakarta.validation.constraints.*;
 
 public record SkuCreateRequest(
         @NotNull
@@ -13,10 +11,12 @@ public record SkuCreateRequest(
 
         @NotNull
         @Positive
+        @Max(Sku.MAX_PRICE)
         Long price,
 
         @NotNull
         @Min(0)
+        @Max(Stock.MAX_QUANTITY)
         Integer quantity
 ) {
 }

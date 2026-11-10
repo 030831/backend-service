@@ -52,3 +52,9 @@ admin:
     email: ${ADMIN_BOOTSTRAP_EMAIL:}
     name: ${ADMIN_BOOTSTRAP_NAME:}
     password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

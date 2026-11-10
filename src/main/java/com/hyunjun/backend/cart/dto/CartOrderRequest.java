@@ -13,6 +13,7 @@ public record CartOrderRequest(
         String idempotencyKey,
 
         @NotEmpty(message = "주문할 장바구니 항목을 1개 이상 골라야 합니다.")
+        @Size(max = Order.MAX_LINES)
         List<@NotNull Long> cartItemIds,
 
         @NotNull(message = "배송지는 필수입니다.")

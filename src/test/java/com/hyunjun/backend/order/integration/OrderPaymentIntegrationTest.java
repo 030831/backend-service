@@ -250,9 +250,12 @@ class OrderPaymentIntegrationTest extends OrderIntegrationTestSupport{
         // then
         assertThat(beforeJob.statusCode()).isEqualTo(409);
         assertThat(body(beforeJob).get("detail").asString()).isEqualTo("결제 기한이 지났습니다.");
-        assertThat(ids).hasSize(1);
+        assertThat(ids).containsExactly(orderIdP);
         assertThat(first).isTrue();
         assertThat(second).isFalse();
+        assertThat(expired.get("status").asString()).isEqualTo("EXPIRED");
+        assertThat(order.get("status").asString()).isEqualTo("PENDING_PAYMENT");
+        assertThat(stock(skuIdA)).isEqualTo(4);
 
         // when
         HttpResponse<String> afterJob = pay(buyer, orderIdP, 20000);

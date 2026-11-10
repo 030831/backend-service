@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 public class Sku extends BaseTimeEntity {
 
     public static final int OPTION_LABEL_MAX_LENGTH = 100;
+    public static final long MAX_PRICE = 100_000_000L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,8 +47,8 @@ public class Sku extends BaseTimeEntity {
     }
 
     public void changePrice(long price) {
-        if (price <= 0) {
-            throw new IllegalArgumentException("가격은 0보다 커야 합니다.");
+        if (price <= 0 || price > MAX_PRICE) {
+            throw new IllegalArgumentException("가격은 0보다 크고 " + MAX_PRICE + " 이하여야 합니다.");
         }
 
         this.price = price;
