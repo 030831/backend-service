@@ -122,7 +122,7 @@ public class CartService {
         // d. 주문을 만든다. 실패(404,409)하면 예외가 그대로 나가고 장바구니는 그대로 남는다.
         OrderResponse order = orderService.place(accountId, orderRequest, now);
 
-        // e. 주문이 커밋된 뒤 고른 항목을 지운다. 여기서 실패하면 주문은 남고 항목도 남는다(1.4).
+        // e. 주문이 커밋된 뒤 고른 항목을 지운다. 여기서 실패하면 주문은 남고 항목도 남는다.
         cartItemRepository.deleteOrdered(accountId, request.cartItemIds());
 
         return order;

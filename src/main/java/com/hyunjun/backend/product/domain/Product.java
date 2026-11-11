@@ -1,6 +1,7 @@
 package com.hyunjun.backend.product.domain;
 
 import com.hyunjun.backend.common.domain.BaseTimeEntity;
+import com.hyunjun.backend.common.domain.DomainText;
 import com.hyunjun.backend.product.exception.SkuNotFoundException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -46,8 +47,8 @@ public class Product extends BaseTimeEntity {
         }
 
         this.storeId = storeId;
-        this.name = requiredText(name, NAME_MAX_LENGTH, "상품 이름");
-        this.description = requiredText(description, DESCRIPTION_MAX_LENGTH, "상품 설명");
+        this.name = DomainText.required(name, NAME_MAX_LENGTH, "상품 이름");
+        this.description = DomainText.required(description, DESCRIPTION_MAX_LENGTH, "상품 설명");
         this.status = ProductStatus.ON_SALE;
     }
 
@@ -73,8 +74,8 @@ public class Product extends BaseTimeEntity {
     }
 
     public void update(String name, String description) {
-        this.name = requiredText(name, NAME_MAX_LENGTH, "상품 이름");
-        this.description = requiredText(description, DESCRIPTION_MAX_LENGTH, "상품 설명");
+        this.name = DomainText.required(name, NAME_MAX_LENGTH, "상품 이름");
+        this.description = DomainText.required(description, DESCRIPTION_MAX_LENGTH, "상품 설명");
     }
 
     public void stop() {
@@ -83,15 +84,5 @@ public class Product extends BaseTimeEntity {
 
     public void resume() {
         this.status = ProductStatus.ON_SALE;
-    }
-
-    private static String requiredText(String value, int maxLength, String fieldName) {
-        if (value == null || value.isBlank() || value.length() > maxLength) {
-            throw new IllegalArgumentException(
-                    fieldName + "은(는) 비어 있지 않은 " + maxLength + "자 이하여야 합니다."
-            );
-        }
-
-        return value;
     }
 }

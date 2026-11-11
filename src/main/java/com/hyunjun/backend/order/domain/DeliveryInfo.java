@@ -1,5 +1,6 @@
 package com.hyunjun.backend.order.domain;
 
+import com.hyunjun.backend.common.domain.DomainText;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
@@ -36,29 +37,11 @@ public class DeliveryInfo {
     private String deliveryMemo;
 
     public DeliveryInfo(String recipientName, String recipientPhone, String zipCode, String address1, String address2, String deliveryMemo) {
-        this.recipientName = requiredText(recipientName, RECIPIENT_NAME_MAX_LENGTH, "받는 사람");
-        this.recipientPhone = requiredText(recipientPhone, RECIPIENT_PHONE_MAX_LENGTH, "연락처");
-        this.zipCode = requiredText(zipCode, ZIP_CODE_MAX_LENGTH, "우편번호");
-        this.address1 = requiredText(address1, ADDRESS_MAX_LENGTH, "주소");
-        this.address2 = optionalText(address2, ADDRESS_MAX_LENGTH, "상세 주소");
-        this.deliveryMemo = optionalText(deliveryMemo, MEMO_MAX_LENGTH, "배송 메모");
-    }
-
-    private static String requiredText(String value, int maxLength, String fieldName) {
-        if (value == null || value.isBlank() || value.length() > maxLength) {
-            throw new IllegalArgumentException(
-                    fieldName + "은(는) 비어 있지 않은 " + maxLength + "자 이하여야 합니다."
-            );
-        }
-        return value;
-    }
-
-    private static String optionalText(String value, int maxLength, String fieldName) {
-        if (value != null  && value.length() > maxLength) {
-            throw new IllegalArgumentException(
-                    fieldName + "은(는) " + maxLength + "자 이하여야 합니다."
-            );
-        }
-        return value;
+        this.recipientName = DomainText.required(recipientName, RECIPIENT_NAME_MAX_LENGTH, "받는 사람");
+        this.recipientPhone = DomainText.required(recipientPhone, RECIPIENT_PHONE_MAX_LENGTH, "연락처");
+        this.zipCode = DomainText.required(zipCode, ZIP_CODE_MAX_LENGTH, "우편번호");
+        this.address1 = DomainText.required(address1, ADDRESS_MAX_LENGTH, "주소");
+        this.address2 = DomainText.optional(address2, ADDRESS_MAX_LENGTH, "상세 주소");
+        this.deliveryMemo = DomainText.optional(deliveryMemo, MEMO_MAX_LENGTH, "배송 메모");
     }
 }

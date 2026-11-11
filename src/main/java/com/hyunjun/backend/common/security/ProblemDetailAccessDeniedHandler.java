@@ -1,7 +1,6 @@
 package com.hyunjun.backend.common.security;
 
 import com.hyunjun.backend.common.exception.ProblemDetailWriter;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,6 @@
 package com.hyunjun.backend.order.service;
 
+import com.hyunjun.backend.common.exception.ConstraintViolations;
 import com.hyunjun.backend.order.domain.Order;
 import com.hyunjun.backend.order.domain.OrderLine;
 import com.hyunjun.backend.order.dto.OrderCreateRequest;
@@ -13,7 +14,6 @@ import com.hyunjun.backend.product.exception.InsufficientStockException;
 import com.hyunjun.backend.product.service.ProductQueryService;
 import com.hyunjun.backend.product.service.StockService;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,21 +74,11 @@ public class OrderCreator {
     }
 
     private RuntimeException translate(DataIntegrityViolationException exception) {
-        Throwable cause = exception;
-
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation) {
-                String constraintName = violation.getConstraintName();
-
-                if (constraintName != null && constraintName.contains("uk_orders_idempotency")) {
-                    return new DuplicateOrderRequestException("같은 멱등키의 주문이 이미 있습니다.", exception);
-                }
-            }
-
-            cause = cause.getCause();
+        if (ConstraintViolations.isViolated(exception, "uk_orders_idempotency")) {
+            return new DuplicateOrderRequestException("같은 멱등키의 주문이 이미 있습니다.", exception);
         }
 
-        return exception;
+        throw exception;
     }
 
 }

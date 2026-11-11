@@ -1,6 +1,7 @@
 package com.hyunjun.backend.store.domain;
 
 import com.hyunjun.backend.common.domain.BaseTimeEntity;
+import com.hyunjun.backend.common.domain.DomainText;
 import com.hyunjun.backend.store.exception.AlreadyReviewedApplicationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -16,6 +17,7 @@ import java.time.Instant;
 public class StoreApplication extends BaseTimeEntity {
 
     public static final int STORE_NAME_MAX_LENGTH = 50;
+    public static final int REJECTION_REASON_MAX_LENGTH = 500;
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,7 +38,7 @@ public class StoreApplication extends BaseTimeEntity {
 
     private Instant reviewedAt;
 
-    @Column(length = 500)
+    @Column(length = REJECTION_REASON_MAX_LENGTH)
     private String rejectionReason;
 
     public StoreApplication(Long applicantAccountId, String storeName) {
@@ -45,14 +47,10 @@ public class StoreApplication extends BaseTimeEntity {
             throw new IllegalArgumentException("계정 아이디가 비어있습니다.");
         }
 
-        if (storeName == null || storeName.isBlank() || storeName.length() > STORE_NAME_MAX_LENGTH) {
-            throw new IllegalArgumentException("스토어 이름이 비어있거나" + STORE_NAME_MAX_LENGTH + "자 초과입니다.");
-        }
-
         this.status = ApplicationStatus.SUBMITTED;
         this.pendingApplicantId = applicantAccountId;
         this.applicantAccountId=  applicantAccountId;
-        this.storeName = storeName;
+        this.storeName = DomainText.required(storeName, STORE_NAME_MAX_LENGTH, "스토어 이름");
     }
 
     public Store approve(Long adminId, Instant now) {
@@ -67,12 +65,8 @@ public class StoreApplication extends BaseTimeEntity {
     public void reject(Long adminId, Instant now, String reason) {
         requiredSubmitted();
 
-        if (reason == null || reason.isBlank() || reason.length() > 500) {
-            throw new IllegalArgumentException("반려 사유는 비어 있지 않은 500자 이하여야 합니다.");
-        }
-
+        this.rejectionReason = DomainText.required(reason, REJECTION_REASON_MAX_LENGTH, "반려 사유");
         this.status = ApplicationStatus.REJECTED;
-        this.rejectionReason = reason;
         markedReviewed(adminId, now);
     }
 

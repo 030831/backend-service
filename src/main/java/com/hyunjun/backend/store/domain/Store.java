@@ -1,6 +1,7 @@
 package com.hyunjun.backend.store.domain;
 
 import com.hyunjun.backend.common.domain.BaseTimeEntity;
+import com.hyunjun.backend.common.domain.DomainText;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,13 +13,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Store extends BaseTimeEntity {
 
+    public static final int NAME_MAX_LENGTH = 50;
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
     private Long accountId;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = NAME_MAX_LENGTH)
     private String name;
 
     Store(Long accountId, String name) {
@@ -26,11 +29,7 @@ public class Store extends BaseTimeEntity {
             throw new IllegalArgumentException("계정 아이디가 비어있습니다.");
         }
 
-        if (name == null || name.isBlank() || name.length() > 50) {
-            throw new IllegalArgumentException("이름이 비어있거나 50자를 초과하였습니다.");
-        }
-
         this.accountId = accountId;
-        this.name = name;
+        this.name = DomainText.required(name, NAME_MAX_LENGTH, "스토어 이름");
     }
 }

@@ -1,7 +1,9 @@
 package com.hyunjun.backend.admin.domain;
 
 import com.hyunjun.backend.common.domain.BaseTimeEntity;
+import com.hyunjun.backend.common.domain.DomainText;
 import com.hyunjun.backend.common.domain.LoginLock;
+import com.hyunjun.backend.common.security.LoginCredential;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,7 +18,7 @@ import java.time.Instant;
         })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class AdminAccount extends BaseTimeEntity {
+public class AdminAccount extends BaseTimeEntity implements LoginCredential {
 
     public static final int EMAIL_MAX_LENGTH = 254;
     public static final int NAME_MAX_LENGTH = 50;
@@ -39,8 +41,8 @@ public class AdminAccount extends BaseTimeEntity {
 
     public AdminAccount(String email, String name, String passwordHash) {
 
-        this.email = requiredText(email, EMAIL_MAX_LENGTH, "이메일");
-        this.name = requiredText(name, NAME_MAX_LENGTH, "이름");
+        this.email = DomainText.required(email, EMAIL_MAX_LENGTH, "이메일");
+        this.name = DomainText.required(name, NAME_MAX_LENGTH, "이름");
 
         if (passwordHash == null || passwordHash.isBlank()) {
             throw new IllegalArgumentException("비밀번호 해시가 필요합니다.");
@@ -49,6 +51,7 @@ public class AdminAccount extends BaseTimeEntity {
         this.passwordHash = passwordHash;
     }
 
+    @Override
     public boolean isLoginLocked(Instant now) {
         return loginLock.isLocked(now);
     }
@@ -63,15 +66,5 @@ public class AdminAccount extends BaseTimeEntity {
 
     public void resetLoginFailures() {
         loginLock.reset();
-    }
-
-    private static String requiredText(String value, int maxLength, String name) {
-        if (value == null || value.isBlank() || value.length() > maxLength) {
-            throw new IllegalArgumentException(
-                    name + "은(는) 비어 있지 않은 " + maxLength + "자 이하여야 합니다."
-            );
-        }
-
-        return value;
     }
 }

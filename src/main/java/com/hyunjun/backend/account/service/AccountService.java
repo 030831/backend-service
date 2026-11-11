@@ -5,9 +5,9 @@ import com.hyunjun.backend.account.dto.AccountResponse;
 import com.hyunjun.backend.account.exception.AccountNotFoundException;
 import com.hyunjun.backend.account.exception.DuplicateAccountException;
 import com.hyunjun.backend.account.repository.AccountRepository;
+import com.hyunjun.backend.common.exception.ConstraintViolations;
 import com.hyunjun.backend.common.util.EmailNormalizer;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -68,22 +68,12 @@ public class AccountService {
     }
 
     private DuplicateAccountException translate(DataIntegrityViolationException exception) {
-        Throwable cause = exception;
+        if (ConstraintViolations.isViolated(exception, "uk_accounts_email")) {
+            return new DuplicateAccountException("이미 사용 중인 이메일입니다.", exception);
+        }
 
-        while (cause != null) {
-            if (cause instanceof ConstraintViolationException violation) {
-                String constraintName = violation.getConstraintName();
-
-                if (constraintName != null && constraintName.contains("uk_accounts_email")) {
-                    return new DuplicateAccountException("이미 사용 중인 이메일입니다.", exception);
-                }
-
-                if (constraintName != null && constraintName.contains("uk_accounts_nickname")) {
-                    return new DuplicateAccountException("이미 사용 중인 닉네임입니다.", exception);
-                }
-            }
-
-            cause = cause.getCause();
+        if (ConstraintViolations.isViolated(exception, "uk_accounts_nickname")) {
+            return new DuplicateAccountException("이미 사용 중인 닉네임입니다.", exception);
         }
 
         throw exception;

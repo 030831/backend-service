@@ -48,7 +48,7 @@ abstract class OrderConcurrencyTestSupport extends IntegrationTestSupport {
                 "SELECT id FROM stores WHERE account_id = ?", Long.class, sellerId
         );
 
-        // 상품 등록은 3-1 서비스를 그대로 쓴다. 재고 행도 함께 생긴다.
+        // 상품 등록은 SellerProductService를 그대로 쓴다. 재고 행도 함께 생긴다.
         tshirtSkuId = sellerProductService.register(storeId, new ProductCreateRequest(
                 "면 티셔츠", "면 100%", List.of(
                 new SkuCreateRequest("흰색 L", 10000L, 100)
