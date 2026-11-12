@@ -60,7 +60,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         // then
         assertThat(response.statusCode()).isEqualTo(409);
         assertThat(detail(response)).isEqualTo("장바구니에는 판매 단위마다 100개까지 담을 수 있습니다.");
-        assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(99);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(99);
     }
 
     @Test
@@ -89,9 +89,9 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
 
         // when
         JsonNode jsonNode = myCart(buyer);
-        JsonNode skuA = cartLineOf(jsonNode, skuIdA);
-        JsonNode skuB = cartLineOf(jsonNode, skuIdB);
-        JsonNode skuC = cartLineOf(jsonNode, skuIdC);
+        JsonNode skuA = elementWithSkuId(jsonNode, skuIdA);
+        JsonNode skuB = elementWithSkuId(jsonNode, skuIdB);
+        JsonNode skuC = elementWithSkuId(jsonNode, skuIdC);
 
         // then
         assertThat(jsonNode.size()).isEqualTo(3);
@@ -127,14 +127,12 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         long cartItemId = putInCart(buyer, skuIdA, 2);
 
         // when
-        HttpResponse<String> response = buyer.patch("/cart/items/" + cartItemId, json(Map.of(
-                "quantity", 4
-        )));
+        HttpResponse<String> response = changeQuantity(buyer, cartItemId, 4);
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(body(response).get("quantity").asLong()).isEqualTo(4);
-        assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(4);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(4);
     }
 
     @Test
@@ -144,7 +142,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         addToCart(buyer, skuIdB, 1);
 
         // when
-        HttpResponse<String> response = buyer.delete("/cart/items/" + cartItemId);
+        HttpResponse<String> response = removeFromCart(buyer, cartItemId);
 
         // then
         assertThat(response.statusCode()).isEqualTo(204);
@@ -160,11 +158,9 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         TestBrowser other = loggedInCustomer("other@example.com", "민수");
 
         // when
-        HttpResponse<String> firstResponse = other.patch("/cart/items/" + cartItemId, json(Map.of(
-                "quantity", 5
-        )));
+        HttpResponse<String> firstResponse = changeQuantity(other, cartItemId, 5);
 
-        HttpResponse<String> secondResponse = other.delete("/cart/items/" + cartItemId);
+        HttpResponse<String> secondResponse = removeFromCart(other, cartItemId);
 
         // then
         assertThat(firstResponse.statusCode()).isEqualTo(404);
@@ -172,7 +168,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
 
         assertThat(detail(firstResponse)).isEqualTo("장바구니 항목을 찾을 수 없습니다.");
         assertThat(detail(secondResponse)).isEqualTo("장바구니 항목을 찾을 수 없습니다.");
-        assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(2);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(2);
     }
 
     @Test
@@ -194,7 +190,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         assertThat(stock(skuIdA)).isEqualTo(4);
         assertThat(stock(skuIdB)).isEqualTo(5);
         assertThat(cartItemCount()).isEqualTo(1);
-        assertThat(cartLineOf(myCart(buyer), skuIdB).get("quantity").asLong()).isEqualTo(2);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdB).get("quantity").asLong()).isEqualTo(2);
     }
 
     @Test
@@ -232,7 +228,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         assertThat(detail(response)).isEqualTo("재고가 부족합니다: 면 티셔츠");
         assertThat(orderCount()).isZero();
         assertThat(stock(skuIdA)).isEqualTo(5);
-        assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(6);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(6);
     }
 
     @Test
@@ -250,7 +246,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         assertThat(detail(response)).isEqualTo("장바구니 항목을 찾을 수 없습니다.");
         assertThat(orderCount()).isZero();
         assertThat(stock(skuIdA)).isEqualTo(5);
-        assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(1);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(1);
     }
 
     @Test
@@ -269,7 +265,7 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
                 result instanceof HttpResponse<?> response && response.statusCode() == 200)
                 .hasSize(2);
         assertThat(cartItemCount()).isEqualTo(1);
-        assertThat(cartLineOf(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(2);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdA).get("quantity").asLong()).isEqualTo(2);
     }
 
     @Test
@@ -291,10 +287,10 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
 
         // then
         assertThat(secondResponse.statusCode()).isEqualTo(409);
-        assertThat(body(secondResponse).get("detail").asString()).isEqualTo("같은 멱등키로 다른 내용의 주문을 보냈습니다.");
+        assertThat(detail(secondResponse)).isEqualTo("같은 멱등키로 다른 내용의 주문을 보냈습니다.");
         assertThat(orderCount()).isEqualTo(1);
         assertThat(stock(skuIdC)).isEqualTo(5);
-        assertThat(cartLineOf(myCart(buyer), skuIdC).get("quantity").asLong()).isEqualTo(1);
+        assertThat(elementWithSkuId(myCart(buyer), skuIdC).get("quantity").asLong()).isEqualTo(1);
     }
 
     private HttpResponse<String> addToCart(TestBrowser browser, Long skuId, int quantity) {
@@ -319,32 +315,26 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         return body(response);
     }
 
-    private JsonNode cartLineOf(JsonNode cart, long skuId) {
+    private HttpResponse<String> changeQuantity(TestBrowser browser, long cartItemId, int quantity) {
+        return browser.patch("/cart/items/" + cartItemId, json(Map.of(
+                "quantity", quantity
+        )));
+    }
 
-        for (JsonNode jsonNode : cart) {
-            if (jsonNode.get("skuId").asLong() == skuId) {
-                return jsonNode;
-            }
-        }
-
-        throw new AssertionError("skuId " + skuId + " 항목이 장바구니에 없습니다: " + cart);
+    private HttpResponse<String> removeFromCart(TestBrowser browser, long cartItemId) {
+        return browser.delete("/cart/items/" + cartItemId);
     }
 
     private HttpResponse<String> orderFromCart(TestBrowser browser, String key, long expectedTotal, Long... cartItemIds) {
         return browser.post("/cart/order", json(Map.of(
                 "idempotencyKey" , key, "cartItemIds", cartItemIds,
-                "delivery", Map.of(
-                        "recipientName", "영희",
-                        "recipientPhone", "010-1234-5678",
-                        "zipCode", "04524",
-                        "address1", "서울 중구 세종대로 110"
-                ),
+                "delivery", delivery("영희"),
                 "expectedTotal", expectedTotal
         )));
     }
 
     private void stopProductOf(Long skuId) {
-        Long productId = jdbcTemplate.queryForObject("SELECT product_id FROM skus WHERE id = ?", Long.class, skuId);
+        Long productId = productIdOf(skuId);
 
         HttpResponse<String> response = seller.post("/seller/products/" + productId + "/stop", "{}");
 
@@ -355,7 +345,4 @@ class CartIntegrationTest extends OrderIntegrationTestSupport {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM cart_items", Integer.class);
     }
 
-    private String detail(HttpResponse<String> response) {
-        return body(response).get("detail").asString();
-    }
 }

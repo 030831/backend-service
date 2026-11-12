@@ -40,6 +40,15 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
         return browser;
     }
 
+    private int failedLoginCount() {
+        return jdbcTemplate.queryForObject("SELECT failed_login_count FROM accounts WHERE email = ?", Integer.class, TEST_EMAIL);
+    }
+
+    private LocalDateTime lockedUntil() {
+        return jdbcTemplate.queryForObject("SELECT locked_until FROM accounts WHERE email = ?", LocalDateTime.class, TEST_EMAIL);
+    }
+
+
     @Test
     void 없는_이메일과_틀린_비밀번호의_401_응답_본문이_같다() {
         // given
@@ -64,11 +73,11 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(429);
-        assertThat(body(response).get("detail").asString()).isEqualTo("로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.");
-        assertThat(jdbcTemplate.queryForObject("SELECT failed_login_count FROM accounts WHERE email = ?", Integer.class, TEST_EMAIL))
+        assertThat(detail(response)).isEqualTo("로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.");
+        assertThat(failedLoginCount())
                 .isEqualTo(5);
 
-        assertThat(jdbcTemplate.queryForObject("SELECT locked_until FROM accounts WHERE email = ?",  LocalDateTime.class  , TEST_EMAIL)).isNotNull();
+        assertThat(lockedUntil()).isNotNull();
     }
 
     @Test
@@ -81,7 +90,7 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(429);
-        assertThat(jdbcTemplate.queryForObject("SELECT failed_login_count FROM accounts WHERE email = ?", Integer.class, TEST_EMAIL))
+        assertThat(failedLoginCount())
                 .isEqualTo(5);
     }
 
@@ -97,8 +106,8 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(204);
-        assertThat(jdbcTemplate.queryForObject("SELECT locked_until FROM accounts WHERE email = ?",  LocalDateTime.class  , TEST_EMAIL)).isNull();
-        assertThat(jdbcTemplate.queryForObject("SELECT failed_login_count FROM accounts WHERE email = ?", Integer.class, TEST_EMAIL))
+        assertThat(lockedUntil()).isNull();
+        assertThat(failedLoginCount())
                 .isEqualTo(0);
     }
 
@@ -113,9 +122,9 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
         loginWith(browser, TEST_EMAIL, TEST_WRONG_PASSWORD);
 
         // then
-        assertThat(jdbcTemplate.queryForObject("SELECT failed_login_count FROM accounts WHERE email = ?", Integer.class, TEST_EMAIL))
+        assertThat(failedLoginCount())
                 .isEqualTo(1);
-        assertThat(jdbcTemplate.queryForObject("SELECT locked_until FROM accounts WHERE email = ?",  LocalDateTime.class  , TEST_EMAIL)).isNull();
+        assertThat(lockedUntil()).isNull();
     }
 
     @Test
@@ -128,7 +137,7 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(204);
-        assertThat(jdbcTemplate.queryForObject("SELECT failed_login_count FROM accounts WHERE email = ?", Integer.class, TEST_EMAIL))
+        assertThat(failedLoginCount())
                 .isEqualTo(0);
     }
 
@@ -172,7 +181,7 @@ class LoginProtectionIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(409);
-        assertThat(body(response).get("detail").asString()).isEqualTo("이미 사용 중인 이메일입니다.");
+        assertThat(detail(response)).isEqualTo("이미 사용 중인 이메일입니다.");
     }
 
     @Test

@@ -1,15 +1,12 @@
 package com.hyunjun.backend.order.service;
 
-import com.hyunjun.backend.account.service.AccountService;
 import com.hyunjun.backend.order.dto.OrderCreateRequest;
 import com.hyunjun.backend.order.dto.OrderLineRequest;
 import com.hyunjun.backend.order.dto.OrderResponse;
 import com.hyunjun.backend.product.exception.InsufficientStockException;
 import com.hyunjun.backend.product.service.ProductQueryService;
-import com.hyunjun.backend.product.service.SellerProductService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.time.Instant;
@@ -21,12 +18,6 @@ import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OrderConcurrencyTest extends OrderConcurrencyTestSupport {
-
-    @Autowired
-    AccountService accountService;
-
-    @Autowired
-    SellerProductService sellerProductService;
 
     // spy : 실제 빈을 그대로 쓰되, 특정 메서드 앞뒤에 코드를 끼워 넣는다. 테스트마다 설정이 초기화된다.
     @MockitoSpyBean

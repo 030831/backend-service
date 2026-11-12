@@ -30,12 +30,7 @@ class InputGuardIntegrationTest extends OrderIntegrationTestSupport {
                 "lines", Arrays.asList((Object) null),
                 "idempotencyKey", "k",
                 "expectedTotal", 0,
-                "delivery", Map.of(
-                        "recipientName", "영희",
-                        "recipientPhone", "010-1234-5678",
-                        "zipCode", "04524",
-                        "address1", "서울 중구 세종대로 110"
-                )
+                "delivery", delivery("영희")
         )));
 
         // then
@@ -59,9 +54,7 @@ class InputGuardIntegrationTest extends OrderIntegrationTestSupport {
     @Test
     void 취소할_항목_번호에_null이_있으면_400이고_재고는_그대로다() {
         // given
-        long orderId = body(buyer.post("/orders", orderJson(
-                "k", 10000, line(skuId, 1)
-        ))).get("id").asLong();
+        long orderId = placeOrder(buyer, 10000, line(skuId, 1));
 
         // when
         HttpResponse<String> response = buyer.post("/orders/" + orderId + "/cancel", json(Map.of(
@@ -108,12 +101,7 @@ class InputGuardIntegrationTest extends OrderIntegrationTestSupport {
                 "lines", list,
                 "idempotencyKey", "k",
                 "expectedTotal", 0,
-                "delivery", Map.of(
-                        "recipientName", "영희",
-                        "recipientPhone", "010-1234-5678",
-                        "zipCode", "04524",
-                        "address1", "서울 중구 세종대로 110"
-                ))));
+                "delivery", delivery("영희"))));
 
         // then
         assertBadRequest(response);
@@ -134,7 +122,7 @@ class InputGuardIntegrationTest extends OrderIntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(body(response).get("detail").asString()).isEqualTo("재고 행을 찾을 수 없습니다.");
+        assertThat(detail(response)).isEqualTo("재고 행을 찾을 수 없습니다.");
     }
 
     @Test
@@ -145,14 +133,14 @@ class InputGuardIntegrationTest extends OrderIntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(409);
-        assertThat(body(response).get("detail").asString()).isEqualTo("재고가 부족합니다.");
+        assertThat(detail(response)).isEqualTo("재고가 부족합니다.");
     }
 
 
 
     private void assertBadRequest(HttpResponse<String> response) {
         assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(body(response).get("detail").asString()).isEqualTo("입력값이 올바르지 않습니다.");
+        assertThat(detail(response)).isEqualTo("입력값이 올바르지 않습니다.");
     }
 
     private HttpResponse<String> registerProduct(long price, int quantity) {
@@ -163,13 +151,8 @@ class InputGuardIntegrationTest extends OrderIntegrationTestSupport {
         )));
     }
 
-    private Long productId() {
-        return jdbcTemplate.queryForObject(
-                "SELECT product_id FROM skus WHERE id = ?", Long.class, skuId);
-    }
-
     private HttpResponse<String> adjustStock(int delta) {
-        return seller.patch("/seller/products/" + productId() + "/skus/" + skuId + "/stock",
+        return seller.patch("/seller/products/" + productIdOf(skuId) + "/skus/" + skuId + "/stock",
                 json(Map.of(
                         "delta", delta
                 )));

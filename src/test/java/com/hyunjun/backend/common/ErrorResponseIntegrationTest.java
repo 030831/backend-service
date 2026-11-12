@@ -21,7 +21,7 @@ class ErrorResponseIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.headers().firstValue("Content-Type").orElse("")).isEqualTo("application/problem+json");
-        assertThat(body(response).get("detail").asString()).isEqualTo("로그인이 필요합니다.");
+        assertThat(detail(response)).isEqualTo("로그인이 필요합니다.");
         assertThat(body(response).get("instance").asString()).isEqualTo("/auth/me");
         assertThat(response.statusCode()).isEqualTo(401);
     }
@@ -37,7 +37,7 @@ class ErrorResponseIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(body(response).get("detail").asString()).isEqualTo("권한이 없습니다.");
+        assertThat(detail(response)).isEqualTo("권한이 없습니다.");
     }
 
     @Test
@@ -50,7 +50,7 @@ class ErrorResponseIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(body(response).get("detail").asString()).isEqualTo("CSRF 토큰이 없거나 올바르지 않습니다.");
+        assertThat(detail(response)).isEqualTo("CSRF 토큰이 없거나 올바르지 않습니다.");
 
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM accounts", Integer.class)).isEqualTo(0);
     }
@@ -69,7 +69,7 @@ class ErrorResponseIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(body(response).get("detail").asString()).isEqualTo("CSRF 토큰이 없거나 올바르지 않습니다.");
+        assertThat(detail(response)).isEqualTo("CSRF 토큰이 없거나 올바르지 않습니다.");
     }
 
     @Test
@@ -82,7 +82,7 @@ class ErrorResponseIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(400);
-        assertThat(body(response).get("detail").asString()).isEqualTo("입력값이 올바르지 않습니다.");
+        assertThat(detail(response)).isEqualTo("입력값이 올바르지 않습니다.");
         assertThat(body(response).get("errors").get(0).get("message").asString()).isEqualTo("이메일은 필수입니다.");
     }
 
@@ -96,6 +96,6 @@ class ErrorResponseIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(body(response).get("detail").asString()).isEqualTo("권한이 없습니다.");
+        assertThat(detail(response)).isEqualTo("권한이 없습니다.");
     }
 }

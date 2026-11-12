@@ -1,25 +1,32 @@
 package com.hyunjun.backend.order.integration;
 
-import com.hyunjun.backend.support.IntegrationTestSupport;
 import com.hyunjun.backend.support.TestBrowser;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpResponse;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OrderIntegrationTest extends OrderIntegrationTestSupport {
 
+    private TestBrowser seller;
+    private TestBrowser buyer;
+    private Long skuId;
+
+    @BeforeEach
+    void 판매자와_구매자와_티셔츠를_준비한다() {
+        seller = openStore("seller@example.com", "철수상점");
+        buyer = loggedInCustomer("buyer@example.com", "영희");
+        skuId = registerSku(seller, "면 티셔츠", 10000, 5);
+    }
+
+
     @Test
     void 주문하면_201과_PENDING_PAYMENT를_받고_재고가_줄어든다() {
         // given
-        // 재고가 5인 티셔츠 (10,000원)와 로그인한 구매자
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuId = registerSku(seller, "면 티셔츠", 10000, 5);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+        // 재고가 5인 티셔츠 (10,000원)와 로그인한 구매자, 판매자
 
         // when
         // 2개를 주문한다.
@@ -38,9 +45,7 @@ class OrderIntegrationTest extends OrderIntegrationTestSupport {
     @Test
     void 같은_멱등키로_다시_보내면_같은_주문_ID를_받고_재고는_한_번만_줄어든다() {
         // given
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuId = registerSku(seller, "면 티셔츠", 10000, 5);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+        // 재고가 5인 티셔츠 (10,000원)와 로그인한 구매자, 판매자
 
         // when
         HttpResponse<String> firstResponse = buyer.post("/orders", orderJson("key-1", 20000, line(skuId, 2)));
@@ -57,16 +62,14 @@ class OrderIntegrationTest extends OrderIntegrationTestSupport {
     @Test
     void 화면_총액이_다르면_409이고_재고와_주문은_그대로다() {
         // given
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuId = registerSku(seller, "면 티셔츠", 10000, 5);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+        // 재고가 5인 티셔츠 (10,000원)와 로그인한 구매자, 판매자
 
         // when
         HttpResponse<String> response = buyer.post("/orders", orderJson("key-1", 19999, line(skuId, 2)));
 
         // then
         assertThat(response.statusCode()).isEqualTo(409);
-        assertThat(body(response).get("detail").asString()).isEqualTo("가격이 바뀌었습니다. 주문서를 다시 확인해 주세요.");
+        assertThat(detail(response)).isEqualTo("가격이 바뀌었습니다. 주문서를 다시 확인해 주세요.");
         assertThat(stock(skuId)).isEqualTo(5);
         assertThat(orderCount()).isEqualTo(0);
     }
@@ -74,29 +77,22 @@ class OrderIntegrationTest extends OrderIntegrationTestSupport {
     @Test
     void 재고가_모자라면_409이고_다른_항목의_재고와_주문_행도_되돌아간다() {
         // given
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuId1 = registerSku(seller, "면 티셔츠", 10000, 5);
-        Long skuId2 = registerSku(seller, "양말", 3000, 1);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+        Long socksSkuId = registerSku(seller, "양말", 3000, 1);
 
         // when
-        HttpResponse<String> response = buyer.post("/orders", orderJson("key-1", 16000, line(skuId1, 1), line(skuId2, 2)));
+        HttpResponse<String> response = buyer.post("/orders", orderJson("key-1", 16000, line(skuId, 1), line(socksSkuId, 2)));
 
         // then
         assertThat(response.statusCode()).isEqualTo(409);
-        assertThat(body(response).get("detail").asString()).isEqualTo("재고가 부족합니다: 양말");
-        assertThat(stock(skuId1)).isEqualTo(5);
-        assertThat(stock(skuId2)).isEqualTo(1);
+        assertThat(detail(response)).isEqualTo("재고가 부족합니다: 양말");
+        assertThat(stock(skuId)).isEqualTo(5);
+        assertThat(stock(socksSkuId)).isEqualTo(1);
         assertThat(orderCount()).isEqualTo(0);
     }
 
     @Test
     void 남의_주문은_404이고_내_목록에는_내_주문만_있다() {
         // given
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuId = registerSku(seller, "면 티셔츠", 10000, 5);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
-
         HttpResponse<String> buyerResponse = buyer.post("/orders", orderJson("key-1", 20000, line(skuId, 2)));
         long id = body(buyerResponse).get("id").asLong();
 
@@ -105,7 +101,7 @@ class OrderIntegrationTest extends OrderIntegrationTestSupport {
         // then
         assertThat(buyer.get("/orders/" + id).statusCode()).isEqualTo(200);
         assertThat(other.get("/orders/" + id).statusCode()).isEqualTo(404);
-        assertThat(body(other.get("/orders/" + id)).get("detail").asString()).isEqualTo("주문을 찾을 수 없습니다.");
+        assertThat(detail(other.get("/orders/" + id))).isEqualTo("주문을 찾을 수 없습니다.");
         assertThat(buyer.get("/orders/me").statusCode()).isEqualTo(200);
 
         HttpResponse<String> response = buyer.get("/orders/me");
@@ -116,46 +112,32 @@ class OrderIntegrationTest extends OrderIntegrationTestSupport {
     @Test
     void 같은_멱등키로_다른_상품을_보내면_409이고_주문과_재고는_그대로다() {
         // given
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuIdA = registerSku(seller, "면 티셔츠", 10000, 5);
-        Long skuIdB = registerSku(seller, "양말", 10000, 5);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
+        Long socksSkuId = registerSku(seller, "양말", 10000, 5);
 
-        HttpResponse<String> firstResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuIdA, 1)));
+        HttpResponse<String> firstResponse = buyer.post("/orders", orderJson("key-1", 10000, line(socksSkuId, 1)));
         assertThat(firstResponse.statusCode()).isEqualTo(201);
 
         // when
-        HttpResponse<String> secondResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuIdB, 1)));
+        HttpResponse<String> secondResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuId, 1)));
 
         // then
         assertThat(secondResponse.statusCode()).isEqualTo(409);
-        assertThat(body(secondResponse).get("detail").asString()).isEqualTo("같은 멱등키로 다른 내용의 주문을 보냈습니다.");
+        assertThat(detail(secondResponse)).isEqualTo("같은 멱등키로 다른 내용의 주문을 보냈습니다.");
         assertThat(orderCount()).isEqualTo(1);
-        assertThat(stock(skuIdA)).isEqualTo(4);
-        assertThat(stock(skuIdB)).isEqualTo(5);
+        assertThat(stock(socksSkuId)).isEqualTo(4);
+        assertThat(stock(skuId)).isEqualTo(5);
     }
 
     @Test
     void 같은_멱등키로_다른_배송지를_보내면_409이다() {
         // given
-        TestBrowser seller = openStore("seller@example.com", "철수상점");
-        Long skuId = registerSku(seller, "면 티셔츠", 10000, 5);
-        TestBrowser buyer = loggedInCustomer("buyer@example.com", "영희");
         HttpResponse<String> firstResponse = buyer.post("/orders", orderJson("key-1", 10000, line(skuId, 1)));
 
         assertThat(firstResponse.statusCode()).isEqualTo(201);
         // when
-        HttpResponse<String> secondResponse = buyer.post("/orders", json(Map.of(
-                "idempotencyKey", "key-1",
-                "lines", List.of(line(skuId, 1)),
-                "delivery", Map.of(
-                        "recipientName", "민수",
-                        "recipientPhone", "010-1234-5678",
-                        "zipCode", "04524",
-                        "address1", "서울 중구 세종대로 110"
-                ),
-                "expectedTotal", 10000
-        )));
+        HttpResponse<String> secondResponse = buyer.post("/orders", orderJsonTo(
+                "민수", "key-1", 10000, line(skuId, 1)
+        ));
 
         // then
         assertThat(secondResponse.statusCode()).isEqualTo(409);

@@ -20,6 +20,16 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         return body(response).get("id").asLong();
     }
 
+    private HttpResponse<String> approve(TestBrowser browser, Long applicationId) {
+        return browser.post("/admin/store-applications/" + applicationId + "/approve", "{}");
+    }
+
+    private HttpResponse<String> reject(TestBrowser browser, Long applicationId, String reason) {
+        return browser.post("/admin/store-applications/" + applicationId + "/reject", json(Map.of(
+                "reason", reason
+        )));
+    }
+
     @Test
     void 관리자가_승인하면_스토어가_생기고_고객이_내_스토어를_볼_수_있다() {
         // given
@@ -31,7 +41,7 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
 
         // when
         // 관리자가 그 신청을 승인한다.
-        HttpResponse<String> response = admin.post("/admin/store-applications/" + applicationId + "/approve", "{}");
+        HttpResponse<String> response = approve(admin, applicationId);
 
         // then
         // 201 응답과 새 스토어 이름을 받는다.
@@ -52,12 +62,12 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         Long applicationId = submit(customer, "철수상점");
 
         TestBrowser admin = loggedInAdmin();
-        admin.post("/admin/store-applications/" + applicationId + "/approve", "{}");
+        approve(admin, applicationId);
 
         // when
-        HttpResponse<String> response = admin.post("/admin/store-applications/" + applicationId + "/approve", "{}");
+        HttpResponse<String> response = approve(admin, applicationId);
         assertThat(response.statusCode()).isEqualTo(409);
-        assertThat(body(response).get("detail").asString()).isEqualTo("이미 심사한 신청입니다.");
+        assertThat(detail(response)).isEqualTo("이미 심사한 신청입니다.");
     }
 
     @Test
@@ -69,8 +79,7 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         TestBrowser admin = loggedInAdmin();
 
         // when
-        HttpResponse<String> response = admin.post("/admin/store-applications/" + applicationId + "/reject",
-                json(Map.of("reason", "store name is unclear")));
+        HttpResponse<String> response = reject(admin, applicationId, "store name is unclear");
 
         // then
         assertThat(response.statusCode()).isEqualTo(200);
@@ -88,8 +97,7 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         Long applicationId = submit(customer, "철수상점");
 
         TestBrowser admin = loggedInAdmin();
-        admin.post("/admin/store-applications/" + applicationId + "/reject",
-                json(Map.of("reason", "store name is unclear")));
+        reject(admin, applicationId, "store name is unclear");
 
         // when
         HttpResponse<String> response = customer.post("/store-applications", json(Map.of("storeName", "철수상점2")));
@@ -105,14 +113,14 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         Long applicationId = submit(customer, "철수상점");
 
         TestBrowser admin = loggedInAdmin();
-        admin.post("/admin/store-applications/" + applicationId + "/approve", "{}");
+        approve(admin, applicationId);
 
         // when
         HttpResponse<String> response = customer.post("/store-applications", json(Map.of("storeName", "철수상점2")));
 
         // then
         assertThat(response.statusCode()).isEqualTo(409);
-        assertThat(body(response).get("detail").asString()).isEqualTo("이미 스토어가 있습니다.");
+        assertThat(detail(response)).isEqualTo("이미 스토어가 있습니다.");
     }
 
     @Test
@@ -121,11 +129,11 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         TestBrowser admin = loggedInAdmin();
 
         // when
-        HttpResponse<String> response = admin.post("/admin/store-applications/99999/approve", "{}");
+        HttpResponse<String> response = approve(admin, 99999L);
 
         // then
         assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(body(response).get("detail").asString()).isEqualTo("신청을 찾을 수 없습니다.");
+        assertThat(detail(response)).isEqualTo("신청을 찾을 수 없습니다.");
     }
 
     @Test
@@ -135,7 +143,7 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
         Long applicationId = submit(customer, "철수상점");
 
         // when
-        HttpResponse<String> response = customer.post("/admin/store-applications/" + applicationId + "/approve", "{}");
+        HttpResponse<String> response = approve(customer, applicationId);
 
         // then
         assertThat(response.statusCode()).isEqualTo(403);
@@ -153,7 +161,7 @@ public class StoreReviewIntegrationTest extends IntegrationTestSupport {
 
         // then
         assertThat(response.statusCode()).isEqualTo(404);
-        assertThat(body(response).get("detail").asString()).isEqualTo("스토어가 없습니다.");
+        assertThat(detail(response)).isEqualTo("스토어가 없습니다.");
     }
 }
 

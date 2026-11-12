@@ -123,6 +123,22 @@ public abstract class IntegrationTestSupport {
         return jsonMapper.readTree(response.body());
     }
 
+    protected String detail(HttpResponse<String> response) {
+        return body(response).get("detail").asString();
+    }
+
+    /**
+     * 재고는 화면이 아니라 DB에서 바로 읽는다.
+     */
+    protected int stock(Long skuId) {
+        return jdbcTemplate.queryForObject("SELECT quantity FROM stocks WHERE sku_id = ?",
+                Integer.class, skuId);
+    }
+
+    protected int orderCount() {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders", Integer.class);
+    }
+
     /**
      * 두 작업을 동시에 실행하고 결과(성공 값 또는 예외)를 순서대로 모은다. 20초 안에 안 끝나면 실패(교착 감지).
      */

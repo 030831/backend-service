@@ -67,19 +67,4 @@ abstract class OrderConcurrencyTestSupport extends IntegrationTestSupport {
 
         return new OrderCreateRequest(key, List.of(lines), delivery, expectedTotal);
     }
-
-    protected int stock(Long skuId) {
-        return jdbcTemplate.queryForObject(
-                "SELECT quantity FROM stocks WHERE sku_id = ?",
-                Integer.class,
-                skuId
-        );
-    }
-
-    protected int orderCount() {
-        return jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM orders", Integer.class
-        );
-    }
-
 }
